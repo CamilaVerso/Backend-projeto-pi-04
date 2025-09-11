@@ -1,13 +1,23 @@
-from flask import Flask, render_template, request, redirect, url_for, jsonify, session, flash
+import os
+from flask import Flask, jsonify, request, session
 from flask_sqlalchemy import SQLAlchemy
+from flask_cors import CORS # 1. Importe o CORS
 from datetime import datetime
 import os
 from functools import wraps
+import re
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///usuarios.db'
+
+instance_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'instance')
+
+os.makedirs(instance_path, exist_ok=True)
+
+app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{os.path.join(instance_path, "usuarios.db")}'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'erlandsonsilvadonascimento')
+
+CORS(app, supports_credentials=True, origins=["http://localhost:5173"]) # Depois que fizer o deploy do front, precisarei mudar o endereço
 
 db = SQLAlchemy(app)
 
@@ -53,83 +63,133 @@ create_tables()
 def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        if 'user_id' not in session:  # Verifica se o usuário está autenticado
-            flash('Você precisa estar logado para acessar essa página.')
-            return redirect(url_for('login'))  # Redireciona para a página de login
+        if 'user_id' not in session:
+            return jsonify({'error': 'Acesso não autorizado'}), 401 
         return f(*args, **kwargs)
     return decorated_function
 
-@app.route('/')
-def index():
-    return render_template('login_page.html')
+def parse_date_flexible(date_string):
+    """Tenta analisar uma string de data em formatos comuns."""
+    # Lista de formatos que vamos tentar, em ordem de prioridade
+    formats_to_try = [
+        '%Y-%m-%d',  # Formato padrão: 2025-09-10
+        '%d/%m/%Y',  # Formato brasileiro: 10/09/2025
+    ]
+    for fmt in formats_to_try:
+        try:
+            # Tenta converter a string para data usando o formato atual
+            return datetime.strptime(date_string, fmt)
+        except ValueError:
+            # Se der erro, tenta o próximo formato da lista
+            continue
+    # Se nenhum formato funcionar, levanta um erro
+    raise ValueError(f"Formato de data inválido: '{date_string}'. Use AAAA-MM-DD ou DD/MM/AAAA.")
 
-@app.route('/login', methods=['POST', 'GET'])
+@app.route('/api/login', methods=['POST'])
 def login():
-    if request.method == 'POST':
-        username = os.getenv('APP_USERNAME', 'usuario')
-        password = os.getenv('APP_PASSWORD', '123456')
-        entered_username = request.form.get('username')
-        entered_password = request.form.get('password')
-        if entered_username == username and entered_password == password:
-            session['user_id'] = entered_username  
-            return redirect(url_for('cadastro_gestante'))
-        else:
-            error_message = "Usuário ou senha incorretos."
-            return render_template('login_page.html', error=error_message)
+    data = request.get_json() 
+    if not data:
+        return jsonify({'error': 'Requisição inválida'}), 400
+
+    username = os.getenv('APP_USERNAME', 'usuario')
+    password = os.getenv('APP_PASSWORD', '123456')
+
+    if data.get('username') == username and data.get('password') == password:
+        session['user_id'] = data.get('username')
+        return jsonify({'message': 'Login realizado com sucesso'}), 200
     else:
-        return render_template('login_page.html')
+        return jsonify({'error': 'Usuário ou senha incorretos'}), 401
 
-@app.route('/cadastro_gestante', methods=['GET'])
-@login_required  # Protege a rota de cadastro de gestantes
-def cadastro_gestante():
-    return render_template('cadastro_gestante.html')
+@app.route('/api/logout', methods=['POST'])
+def logout():
+    session.pop('user_id', None)
+    return jsonify({'message': 'Logout realizado com sucesso'}), 200
 
-@app.route('/submit', methods=['POST'])
-@login_required  # Protege a rota de submit, se necessário
-def submit():
-    cpf = request.form.get('cpf')
-    nome = request.form.get('nome')
-    data_nascimento = datetime.strptime(request.form.get('data_nascimento'), '%Y-%m-%d')
-    idade = (datetime.now() - data_nascimento).days // 365
-    nome_mae = request.form.get('nome_mae')
-    data_prevista_parto = datetime.strptime(request.form.get('data_prevista_parto'), '%Y-%m-%d')
-    ultima_menstruacao = datetime.strptime(request.form.get('ultima_menstruacao'), '%Y-%m-%d')
-    endereco = request.form.get('endereco')
-    cep = request.form.get('cep')
-    cidade = request.form.get('cidade')
-    estado = request.form.get('estado')
-    telefone = request.form.get('telefone')
+@app.route('/api/status')
+@login_required
+def status():
+   
+    return jsonify({'message': 'Sessão ativa'}), 200
 
-    novo_usuario = Usuario(
-        cpf=cpf, nome=nome, data_nascimento=data_nascimento,
-        idade=idade, nome_mae=nome_mae, data_prevista_parto=data_prevista_parto,
-        ultima_menstruacao=ultima_menstruacao, endereco=endereco, cep=cep,
-        cidade=cidade, estado=estado, telefone=telefone
-    )
 
-    db.session.add(novo_usuario)
-    db.session.commit()
+@app.route('/api/gestantes', methods=['POST'])
+@login_required
+def create_gestante():
+    data = request.get_json()
+    if not data:
+        return jsonify({'error': 'Dados não fornecidos'}), 400
+    
+     # --- PONTO DE DEPURAÇÃO 1: VERIFICAR OS DADOS RECEBIDOS ---
+    print("--- DADOS RECEBIDOS DO FRONTEND: ---")
+    print(data)
+    print("------------------------------------")
 
-    return redirect(url_for('success'))  
+    try:
+        cpf_limpo = re.sub(r'\D', '', data.get('cpf', ''))
 
-@app.route('/success', methods=['GET'])
-def success():
-    return render_template('success_page.html') 
+        if not cpf_limpo or len(cpf_limpo) != 11:
+            return jsonify({'error': 'CPF inválido'}), 400
+        
+        if Usuario.query.filter_by(cpf=cpf_limpo).first():
+            return jsonify({'error': 'CPF já cadastrado'}), 409
 
-@app.route('/api/gestante/<cpf>', methods=['GET'])
-@login_required  # Protege a rota da API, se necessário
-def get_gestante(cpf):
-    usuario = Usuario.query.filter_by(cpf=cpf).first()
+        data_nascimento = parse_date_flexible(data.get('data_nascimento'))
+        idade = (datetime.now() - data_nascimento).days // 365
+
+        novo_usuario = Usuario(
+            cpf=cpf_limpo,
+            nome=data.get('nome'),
+            data_nascimento=data_nascimento,
+            idade=idade,
+            nome_mae=data.get('nome_mae'),
+            data_prevista_parto=parse_date_flexible(data.get('data_prevista_parto')),
+            ultima_menstruacao=parse_date_flexible(data.get('ultima_menstruacao')),
+            endereco=data.get('endereco'),
+            cep=data.get('cep'),
+            cidade=data.get('cidade'),
+            estado=data.get('estado'),
+            telefone=data.get('telefone')
+        )
+        db.session.add(novo_usuario)
+        db.session.commit()
+        
+        return jsonify(novo_usuario.to_dict()), 201
+    except Exception as e:
+        db.session.rollback()
+        # --- PONTO DE DEPURAÇÃO 2: IMPRIMIR O ERRO EXATO ---
+        print("!!!!!!!!!!!!!! ERRO CAPTURADO !!!!!!!!!!!!!!")
+        print(f"Tipo do Erro: {type(e)}")
+        print(f"Erro em si: {e}")
+        import traceback
+        traceback.print_exc() # Imprime o traceback completo que estava escondido
+        print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+        return jsonify({'error': 'Erro interno ao cadastrar', 'details': str(e)}), 500
+
+
+@app.route('/api/gestantes', methods=['GET'])
+@login_required
+def get_all_gestantes():
+    usuarios = Usuario.query.all()
+    return jsonify([usuario.to_dict() for usuario in usuarios]), 200
+
+
+
+@app.route('/api/gestantes/<cpf>', methods=['GET'])
+@login_required
+def get_gestante_by_cpf(cpf):
+    cpf_limpo = re.sub(r'\D', '', cpf)
+
+    usuario = Usuario.query.filter_by(cpf=cpf_limpo).first()
     if usuario:
         return jsonify(usuario.to_dict()), 200
     else:
         return jsonify({'error': 'Usuário não encontrado'}), 404
 
-@app.route('/logout')
-def logout():
-    session.pop('user_id', None)  
-    return redirect(url_for('login'))  
-
+#if __name__ == '__main__':
+   # port = int(os.environ.get("PORT", 5000))
+   # app.run(host="0.0.0.0", port=port)
+   # No final do app.py
 if __name__ == '__main__':
-    port = int(os.environ.get("PORT", 5000))  
-    app.run(host="0.0.0.0", port=port)  
+    port = int(os.environ.get("PORT", 5000))
+    # Adicionamos debug=True aqui para forçar a exibição dos erros
+    app.run(host="0.0.0.0", port=port, debug=True)
