@@ -69,20 +69,17 @@ def login_required(f):
     return decorated_function
 
 def parse_date_flexible(date_string):
-    """Tenta analisar uma string de data em formatos comuns."""
-    # Lista de formatos que vamos tentar, em ordem de prioridade
     formats_to_try = [
-        '%Y-%m-%d',  # Formato padrão: 2025-09-10
-        '%d/%m/%Y',  # Formato brasileiro: 10/09/2025
+        '%Y-%m-%d', 
+        '%d/%m/%Y',  
     ]
     for fmt in formats_to_try:
         try:
-            # Tenta converter a string para data usando o formato atual
+            
             return datetime.strptime(date_string, fmt)
-        except ValueError:
-            # Se der erro, tenta o próximo formato da lista
+        except ValueError:           
             continue
-    # Se nenhum formato funcionar, levanta um erro
+    
     raise ValueError(f"Formato de data inválido: '{date_string}'. Use AAAA-MM-DD ou DD/MM/AAAA.")
 
 @app.route('/api/login', methods=['POST'])
@@ -118,11 +115,6 @@ def create_gestante():
     data = request.get_json()
     if not data:
         return jsonify({'error': 'Dados não fornecidos'}), 400
-    
-     # --- PONTO DE DEPURAÇÃO 1: VERIFICAR OS DADOS RECEBIDOS ---
-    print("--- DADOS RECEBIDOS DO FRONTEND: ---")
-    print(data)
-    print("------------------------------------")
 
     try:
         cpf_limpo = re.sub(r'\D', '', data.get('cpf', ''))
@@ -156,13 +148,6 @@ def create_gestante():
         return jsonify(novo_usuario.to_dict()), 201
     except Exception as e:
         db.session.rollback()
-        # --- PONTO DE DEPURAÇÃO 2: IMPRIMIR O ERRO EXATO ---
-        print("!!!!!!!!!!!!!! ERRO CAPTURADO !!!!!!!!!!!!!!")
-        print(f"Tipo do Erro: {type(e)}")
-        print(f"Erro em si: {e}")
-        import traceback
-        traceback.print_exc() # Imprime o traceback completo que estava escondido
-        print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
         return jsonify({'error': 'Erro interno ao cadastrar', 'details': str(e)}), 500
 
 
@@ -171,7 +156,6 @@ def create_gestante():
 def get_all_gestantes():
     usuarios = Usuario.query.all()
     return jsonify([usuario.to_dict() for usuario in usuarios]), 200
-
 
 
 @app.route('/api/gestantes/<cpf>', methods=['GET'])
@@ -185,11 +169,7 @@ def get_gestante_by_cpf(cpf):
     else:
         return jsonify({'error': 'Usuário não encontrado'}), 404
 
-#if __name__ == '__main__':
-   # port = int(os.environ.get("PORT", 5000))
-   # app.run(host="0.0.0.0", port=port)
-   # No final do app.py
 if __name__ == '__main__':
-    port = int(os.environ.get("PORT", 5000))
-    # Adicionamos debug=True aqui para forçar a exibição dos erros
-    app.run(host="0.0.0.0", port=port, debug=True)
+   port = int(os.environ.get("PORT", 5000))
+   app.run(host="0.0.0.0", port=port)
+  
