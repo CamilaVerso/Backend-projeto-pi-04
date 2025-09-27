@@ -1,7 +1,8 @@
+import traceback
 import os
 from flask import Flask, jsonify, request, session
 from flask_sqlalchemy import SQLAlchemy
-from flask_cors import CORS # 1. Importe o CORS
+from flask_cors import CORS
 from datetime import datetime
 import os
 from functools import wraps
@@ -35,6 +36,7 @@ class Usuario(db.Model):
     cidade = db.Column(db.String(100), nullable=False)
     estado = db.Column(db.String(100), nullable=False)
     telefone = db.Column(db.String(20), nullable=False)
+    cronograma = db.Column(db.JSON, nullable=True)
 
     def to_dict(self):
         return {
@@ -50,7 +52,8 @@ class Usuario(db.Model):
             'cep': self.cep,
             'cidade': self.cidade,
             'estado': self.estado,
-            'telefone': self.telefone
+            'telefone': self.telefone,
+            'cronograma': self.cronograma,
         }
 
 def create_tables():
@@ -115,8 +118,8 @@ def create_gestante():
     data = request.get_json()
     if not data:
         return jsonify({'error': 'Dados não fornecidos'}), 400
-
     try:
+        
         cpf_limpo = re.sub(r'\D', '', data.get('cpf', ''))
 
         if not cpf_limpo or len(cpf_limpo) != 11:
@@ -127,7 +130,7 @@ def create_gestante():
 
         data_nascimento = parse_date_flexible(data.get('data_nascimento'))
         idade = (datetime.now() - data_nascimento).days // 365
-
+        
         novo_usuario = Usuario(
             cpf=cpf_limpo,
             nome=data.get('nome'),
@@ -140,7 +143,8 @@ def create_gestante():
             cep=data.get('cep'),
             cidade=data.get('cidade'),
             estado=data.get('estado'),
-            telefone=data.get('telefone')
+            telefone=data.get('telefone'),
+            cronograma=data.get('cronograma')
         )
         db.session.add(novo_usuario)
         db.session.commit()
@@ -168,6 +172,22 @@ def get_gestante_by_cpf(cpf):
         return jsonify(usuario.to_dict()), 200
     else:
         return jsonify({'error': 'Usuário não encontrado'}), 404
+    
+@app.route('/api/gestantes/<cpf>', methods=['PUT'])
+@login_required
+def update_gestante(cpf):
+    cpf_limpo = re.sub(r'\D', '', cpf)
+    usuario = Usuario.query.filter_by(cpf=cpf_limpo).first_or_404()
+    
+    data = request.get_json()
+
+    if 'cronograma' in data:
+        usuario.cronograma = data['cronograma']
+
+    db.session.commit()
+    
+    return jsonify(usuario.to_dict()), 200
+
 
 if __name__ == '__main__':
    port = int(os.environ.get("PORT", 5000))
