@@ -1,24 +1,30 @@
 <h1 align="center">
-  <img alt="Gerenciador de Cadastro de Gestantes" title="GestantesApp" src=".github/logo.png" width="200px" />
+  Rede Cegonha: API de Acompanhamento Pré-Natal
 </h1>
 
-<h3 align="center">Gerenciador de Cadastro de Gestantes: API, Frontend e Banco de Dados</h3>
-
 <blockquote align="center">“Cuidar do início da vida é construir um futuro saudável e promissor.”</blockquote>
-
-<p align="center">
-  <a href="#-tecnologias">Tecnologias</a>&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;
-  <a href="#-projeto">Projeto</a>&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;
-  <a href="#-instalação-e-execução">Instalação e Execução</a>&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;
-  <a href="#-api">API</a>&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;
-  <a href="#-licença">Licença</a>
-</p>
-
 <br>
 
 <p align="center">
-  <img alt="PROJETO DO GERENCIADOR" src=".github/gestantes_app.png" width="100%">
+  <a href="#-projeto">Projeto</a>&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;
+  <a href="#-tecnologias">Tecnologias</a>&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;  
+  <a href="#-instalação-e-execução">Instalação e Execução</a>&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;
+  <a href="#-api">API</a>&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;
+  <a href="#-desenvolvedores">Desenvolvedores</a>
 </p>
+
+---
+
+## 💻 Projeto
+
+O **Rede Cegonha** é um sistema web para o acompanhamento pré-natal de gestantes. O projeto consiste em uma API RESTful robusta (Backend) e uma interface de usuário moderna e reativa (Frontend).
+
+**Funcionalidades:**
+
+- Autenticação de usuário segura baseada em sessão.
+- Cadastro completo e busca de gestantes por CPF.
+- Um cronograma pré-natal interativo para gerenciar consultas e exames, com status editáveis e salvamento de alterações.
+- Utilitários como cálculo de semanas de gestação e preenchimento de endereço via CEP.
 
 ---
 
@@ -26,143 +32,112 @@
 
 Esse projeto foi desenvolvido com as seguintes tecnologias e ferramentas:
 
-### Backend
-- [Python 3.x](https://www.python.org/)
-- [Flask](https://flask.palletsprojects.com/)
-- [Flask-SQLAlchemy](https://flask-sqlalchemy.palletsprojects.com/)
-- [Gunicorn](https://gunicorn.org/)
-- [Pytest](https://docs.pytest.org/)
+### Backend (API)
 
-### Frontend
-- **HTML5, CSS3, JavaScript**
-- Scripts interativos com JavaScript para cálculo de idade, semanas, edição de exames e busca de CEP.
+- **Linguagem:** Python 3
+- **Framework:** Flask
+- **Banco de Dados:** SQLAlchemy com SQLite
+- **Autenticação:** Sessão (Cookies)
+- **Comunicação:** Flask-CORS
+- **Testes:** Pytest
 
-### Banco de Dados
-- [SQLite](https://www.sqlite.org/) (ambiente local)
-> Observação: em produção recomenda-se PostgreSQL para persistência de dados na nuvem.
+### Frontend (Interface)
 
-### Integrações e API
-- [ViaCEP](https://viacep.com.br/) — Busca automática de endereço por CEP.
-- API REST interna com endpoints para consultar gestantes e exames via JSON.
-
-### Deploy e CI/CD
-- [Render](https://render.com/) — Hospedagem da aplicação web.
-- [GitHub](https://github.com/) + [GitHub Actions](https://github.com/features/actions) — Versionamento e Integração Contínua.
-
-### Acessibilidade
-- Implementação de boas práticas como `aria-label`, foco via teclado, contraste e semântica HTML.
-
----
-
-## 💻 Projeto
-
-O **Gerenciador de Gestantes** é uma aplicação voltada para o acompanhamento pré-natal de gestantes. Ele permite:
-
-- Cadastro de gestantes com dados completos
-- Cálculo automático de idade e semanas de gestação
-- Tabela cronológica interativa de exames
-- Status coloridos editáveis nos exames
-- Busca por CPF
-- Visualização de dados e exames já preenchidos
-- Fornecimento de API REST com os dados cadastrados
+- **Framework:** React com TypeScript
+- **Build Tool:** Vite
+- **Estilização:** Tailwind CSS
+- **Roteamento:** React Router DOM
+- **Cliente HTTP:** Axios
+- **Testes:** Vitest + React Testing Library
 
 ---
 
 ## ⚙️ Instalação e Execução
 
-### Clone o repositório:
-```bash
-git clone https://github.com/seuusuario/gerenciador-gestantes.git
-cd gerenciador-gestantes
-```
+O projeto é dividido em dois repositórios. Para a aplicação completa funcionar, o backend e o frontend precisam estar rodando simultaneamente em terminais separados.
 
-### Backend
+### 1. Backend (Este Repositório)
+
 ```bash
-cd backend
+# Clone este repositório
+git clone [COLE AQUI A URL DO SEU REPOSITÓRIO BACKEND]
+cd nome-da-pasta-do-backend
+
+# Crie e ative o ambiente virtual
 python -m venv venv
-# Linux/Mac:
-source venv/bin/activate
-# Windows:
-.env\Scriptsctivate
+# No Windows (Git Bash):
+source venv/Scripts/activate
+# No Mac/Linux:
+# source venv/bin/activate
 
+# Instale as dependências
 pip install -r requirements.txt
+
+# Inicie o servidor
+flask run --debug
 ```
-
-### Executar localmente:
-```bash
-python app.py
-# O servidor estará disponível em http://127.0.0.1:5000
-```
-
-### Frontend
-```bash
-cd frontend
-# Abra o arquivo index.html no navegador
-```
-
----
-
-## 🔬 Testes Automatizados
-
-### Para rodar testes com Pytest:
-```bash
-cd backend
-pytest
-```
-
-> Os testes são executados automaticamente também via GitHub Actions a cada push na branch `main`.
-
----
 
 ## 📡 API
 
-### Endpoints disponíveis:
+Nossa API possui 7 endpoints que cobrem autenticação e o gerenciamento de dados das gestantes (operações de CRUD).
 
-#### GET `/api/gestante`
-Retorna uma lista com todos os cadastros de gestantes.
+### Autenticação
 
-#### GET `/api/gestante/<cpf>`
-Retorna os dados de uma gestante específica, com base no CPF informado.
+- Endpoint: /api/login
+- Método: POST
+- Protegida: Não
 
-#### POST `/api/exames_status`
-Recebe dados atualizados da tabela de exames para salvar no banco.
+Descrição: Autentica um usuário com username e password e cria uma sessão no servidor.
+
+- Endpoint: /api/logout
+- Método: POST
+- Protegida: Sim
+
+Descrição: Encerra a sessão do usuário atual.
+
+- Endpoint: /api/status
+- Método: GET
+- Protegida: Sim
+  Descrição: Verifica se o usuário atual tem uma sessão ativa.
+
+### Gestantes (CRUD)
+
+- Endpoint: /api/gestantes
+- Método: POST
+- Protegida: Sim
+
+Descrição: Cria um novo cadastro de gestante, recebendo os dados no corpo da requisição.
+
+- Endpoint: /api/gestantes
+- Método: GET
+- Protegida: Sim
+
+Descrição: Lê (busca) a lista completa de todas as gestantes cadastradas.
+
+- Endpoint: /api/gestantes/<cpf>
+- Método: GET
+- Protegida: Sim
+
+Descrição: Lê (busca) os dados de uma gestante específica pelo CPF.
+
+- Endpoint: /api/gestantes/<cpf>
+- Método: PUT
+- Protegida: Sim
+  Descrição: Atualiza os dados de uma gestante existente (ex: o cronograma).
 
 ---
 
-## 📂 Estrutura do Projeto
+## 🧑‍💻 Desenvolvedores
 
-```bash
-gerenciador-gestantes/
-├── backend/
-│   ├── app.py
-│   ├── api.py
-│   ├── models.py
-│   ├── templates/
-│   │   ├── cadastro_gestante.html
-│   │   ├── login_page.html
-│   │   ├── success_page.html
-│   ├── static/
-│   │   └── styles.css
-│   ├── requirements.txt
-│   └── Procfile
-│
-├── frontend/
-│   ├── index.html
-│   ├── cadastro_gestante.html
-│   ├── login_page.html
-│   └── static/
-│       └── styles.css
-│
-├── docs/
-│   └── documentação.md
-└── .github/
-    └── workflows/
-        └── python-tests.yml
-```
+| Aluno                            | RA       |
+| -------------------------------- | -------- |
+| Adriano Alves do Nascimento      | 2230506  |
+| Camila Nazare Pereira Gonçalves  | 23208252 |
+| Erlandson Silva do Nascimento    | 2204739  |
+| Fernando Caires Borges Goncalves | 23203515 |
+| Klayton Rodrigues de Souza       | 2204509  |
+| Marcia Alves Rodrigues da Silva  | 2201297  |
+| Vinicius Torres Novaes           | 2214439  |
+| Willians Soares de Souza         | 2229831  |
 
 ---
-
-## 📝 Licença
-
-Esse projeto está sob a licença MIT.  
-Veja o arquivo [LICENSE.md](LICENSE.md) para mais detalhes.
