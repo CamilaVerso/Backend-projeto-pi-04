@@ -12,4 +12,8 @@ Werkzeug==3.0.4
 gunicorn==20.1.0
 requests
 pytest==8.2.0
-Flask-Cors==4.0.0
+Flask-Cors
+pandas
+numpy
+scikit-learn
+joblib
