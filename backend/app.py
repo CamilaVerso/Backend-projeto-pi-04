@@ -18,6 +18,9 @@ app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{os.path.join(instance_path,
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'erlandsonsilvadonascimento')
 
+app.config['SESSION_COOKIE_SAMESITE'] = 'None'
+app.config['SESSION_COOKIE_SECURE'] = True
+
 CORS(app, supports_credentials=True, origins=["https://rede-cegonha-web.onrender.com", "http://localhost:5173", "http://localhost:3000"])
 
 db = SQLAlchemy(app)
