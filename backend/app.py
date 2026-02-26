@@ -20,8 +20,6 @@ app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'erlandsonsilvadonascimento')
 
 CORS(app, supports_credentials=True, origins=["https://rede-cegonha-web.onrender.com", "http://localhost:5173", "http://localhost:3000"])
 
-CORS(app, supports_credentials=True, origins=["http://localhost:5173"]) # Depois que fizer o deploy do front, precisarei mudar o endereço
-
 db = SQLAlchemy(app)
 
 class Usuario(db.Model):
